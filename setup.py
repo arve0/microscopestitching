@@ -27,7 +27,7 @@ setup(
     include_package_data=True,
     install_requires=[
         'imreg_dft',
-        'scikit-image'
+        'scikit-image',
         'numpy',
         'joblib'
     ],
