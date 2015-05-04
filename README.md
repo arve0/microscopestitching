@@ -6,7 +6,14 @@
 
 ## Overview
 
-Automatic merge/stitching of regular spaced images
+This software aims to be a reliable way to stitch your microscope images. To
+get good results, a couple of assumptions should be true about your dataset:
+
+- images are regular spaced
+- images are of same size
+- side by side images have translation only in one dimension
+  - (if not, check your scanning mirror rotation)
+- scale in edge of images are constant
 
 ## Installation
 
@@ -17,8 +24,21 @@ pip install microscopestitching
 ```
 
 ## Example
+```python
+from microscopestitching import stitch
+from skimage.io import imsave
 
-TODO: Write example.
+images = []
+for i in range(50):
+    row = i // 10
+    col = i % 10
+    images.append(('%d.png' % i, row, col))
+
+merged = stitch(images)
+imsave('merged.png', merged)
+```
+
+See also [this notebook](http://nbviewer.ipython.org/github/arve0/microscopestitching/blob/master/notebooks/example.ipynb).
 
 ## API reference
 

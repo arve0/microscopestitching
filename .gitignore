@@ -1,5 +1,7 @@
 *.py[cod]
 README.rst # generated from .md
+.DS_Store
+.ipynb_checkpoints
 
 # C extensions
 *.so
