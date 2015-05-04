@@ -26,12 +26,16 @@ setup(
     package_data={'microscopestitching': ['VERSION']},
     include_package_data=True,
     install_requires=[
+        'imreg_dft',
+        'scikit-image'
+        'numpy',
+        'joblib'
     ],
     license='MIT',
     zip_safe=False,
     keywords='microscopestitching',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
