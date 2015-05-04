@@ -13,13 +13,32 @@ except NotImplementedError:
     _CPUS = 4
 
 
+def get_offset(images):
+    """Get translation to images.
+
+    Parameters
+    ----------
+    images : list of tuple (path, row, column)
+        Each image-tuple should contain path, row and column.
+
+        Example:
+        >>> images = [('1.png', 0, 0), ('2.png', 0, 1)]
+
+    Returns
+    -------
+    tuple, (ty, tx)
+        ty and tx is translation when moving in respectively x or y direction.
+    """
+    pass
+
 def stitch(images):
     """Stitch regular spaced images.
 
     Parameters
     ----------
     images : list of tuple (path, row, column)
-        Each image-tuple should contain path, row and column.
+        Each image-tuple should contain path, row and column. Row 0,
+        column 0 is top left image.
 
         Example:
         >>> images = [('1.png', 0, 0), ('2.png', 0, 1)]
@@ -61,7 +80,9 @@ def stitch(images):
     assert xoffset < 0, "Column offset should be negative"
 
     if xoffset != yoffset:
-        print('Warning: yoffset != xoffset: %4f != %4f' % (yoffset, xoffset))
+        print('Warning: yoffset != xoffset: %s != %s' % (yoffset, xoffset))
+        print("Assuming yoffset %s" % xoffset)
+        yoffset = xoffset
 
     # assume all images have the same shape
     img1 = imread(ic.images[0].path)
