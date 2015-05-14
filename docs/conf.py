@@ -21,6 +21,16 @@ import sys, os
 cwd = os.getcwd()
 parent = os.path.dirname(cwd)
 sys.path.insert(0, parent)
+from unittest.mock import MagicMock
+
+# mock dependencies
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return Mock()
+
+MOCK_MODULES = ['skimage', 'skimage.io', 'numpy', 'imreg_dft', 'joblib']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 import microscopestitching
 
