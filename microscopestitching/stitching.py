@@ -83,7 +83,7 @@ def stitch(images):
     # last dimension is number of images on top of each other
     merged = np.zeros((height, width, 2), dtype=np.int)
     for r, c in product(ic.rows, ic.cols):
-        mask = merge_slice(r, c, y, x, yoffset, xoffset)
+        mask = _merge_slice(r, c, y, x, yoffset, xoffset)
         # last dim is used for averaging the seam
         img = _add_ones_dim(imread(ic.image(r, c).path))
         merged[mask] += img
@@ -92,12 +92,6 @@ def stitch(images):
     merged[..., 0] /= merged[..., 1]
 
     return merged[..., 0].astype(np.uint8)
-
-
-def merge_slice(row, col, height, width, yoffset, xoffset):
-    ystart = row*(height + yoffset)
-    xstart = col*(width + xoffset)
-    return slice(ystart, ystart+height), slice(xstart, xstart+width)
 
 
 
@@ -186,9 +180,10 @@ def _add_ones_dim(arr):
     return np.concatenate((arr, np.ones_like(arr)), axis=-1)
 
 
-def _remove_none(list_):
-    "Remove None objects from list. Returns the new list."
-    return [o for o in list_ if o != None]
+def _merge_slice(row, col, height, width, yoffset, xoffset):
+    ystart = row*(height + yoffset)
+    xstart = col*(width + xoffset)
+    return slice(ystart, ystart+height), slice(xstart, xstart+width)
 
 
 def _smooth_overlap(img):
