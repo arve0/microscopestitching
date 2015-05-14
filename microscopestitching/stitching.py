@@ -1,7 +1,6 @@
 import imreg_dft as imreg
 from skimage.io import imread
 #from skimage.feature import register_translation
-from itertools import product
 import numpy as np
 from joblib import Parallel, delayed
 from warnings import warn
@@ -30,6 +29,11 @@ def calc_translations_parallel(images):
     """
     w = Parallel(n_jobs=_CPUS)
     res = w(delayed(images.translation)(img) for img in images)
+
+    # save results to Image object, as Parallel is spawning another process
+    for i,translation in enumerate(res):
+        images[i].translation = translation
+
     return np.array(res)
 
 
@@ -52,23 +56,10 @@ def stitch(images):
     """
     if type(images) != ImageCollection:
         images = ImageCollection(images)
-    translations = calc_translations_parallel(images)
-    y_translations = translations[1:,0] # do not include top left (offset should be zero)
-    x_translations = translations[1:,1]
+    calc_translations_parallel(images)
+    _translation_warn(images)
 
-    # check that they are regular spaced
-    xoffset = np.median(y_translations[:, 1])
-    if xoffset != 0:
-        warn("Expected rows to have zero x-offset. "
-              "Offset found: %s" % xoffset)
-
-    yoffset = np.median(x_translations[:, 0])
-    if yoffset != 0:
-        warn("Expected columns to have zero y-offset. "
-              "Offset found: %s" % yoffset)
-
-    yoffset = np.median(y_translations[:, 0])
-    xoffset = np.median(x_translations[:, 1])
+    yoffset, xoffset = images.median_translation()
 
     assert yoffset < 0, "Row offset should be negative"
     assert xoffset < 0, "Column offset should be negative"
@@ -77,8 +68,7 @@ def stitch(images):
         warn('yoffset != xoffset: %s != %s' % (yoffset, xoffset))
 
     # assume all images have the same shape
-    img1 = imread(images[0].path)
-    y, x = img1.shape
+    y, x = imread(images[0].path).shape
     height = y*len(images.rows) + yoffset*(len(images.rows)-1)
     width = x*len(images.cols) + xoffset*(len(images.cols)-1)
 
@@ -88,7 +78,7 @@ def stitch(images):
         r, c = image.row, image.col
         mask = _merge_slice(r, c, y, x, yoffset, xoffset)
         # last dim is used for averaging the seam
-        img = _add_ones_dim(imread(images(r, c).path))
+        img = _add_ones_dim(imread(image.path))
         merged[mask] += img
 
     # average seam, possible improvement: use gradient
@@ -128,9 +118,7 @@ class ImageCollection:
     __call__ = image
 
     def translation(self, img):
-        if type(img.translation) == np.ndarray:
-            return img.translation
-        else:
+        if type(img.translation) != np.ndarray:
             # img on top
             top_img = self.image(img.row-1, img.col)
             # img to the left
@@ -151,17 +139,38 @@ class ImageCollection:
                 x_translation = (0, 0)
 
             img.translation = np.array((y_translation, x_translation))
-            return img.translation
+        return img.translation
+
+
+    @property
+    def translations(self):
+        return np.array([self.translation(img) for img in self.images])
+
+
+    @property
+    def y_translations(self):
+        return np.array([self.translation(img)[0] for img in self.images if img.row != 0])
+
+
+    @property
+    def x_translations(self):
+        return np.array([self.translation(img)[1] for img in self.images if img.col != 0])
+
+
+    def median_translation(self):
+        y = np.median(self.y_translations[:,0])
+        x = np.median(self.x_translations[:,1])
+        return y, x
 
 
     @property
     def rows(self):
-        return sorted(set([i[1] for i in self.image_list]))
+        return sorted(set([i.row for i in self.images]))
 
 
     @property
     def cols(self):
-        return sorted(set([i[2] for i in self.image_list]))
+        return sorted(set([i.col for i in self.images]))
 
 
     def __iter__(self):
@@ -174,7 +183,8 @@ class ImageCollection:
 
 
     def __repr__(self):
-        return 'ImageCollection(\n  ' + ',\n  '.join([str(i) for i in self]) + ')'
+        return 'ImageCollection(\n  ' + \
+               ',\n  '.join([str(i) for i in self.images]) + ')'
 
 
 
@@ -188,6 +198,16 @@ def _merge_slice(row, col, height, width, yoffset, xoffset):
     ystart = row*(height + yoffset)
     xstart = col*(width + xoffset)
     return slice(ystart, ystart+height), slice(xstart, xstart+width)
+
+
+def _translation_warn(imagecollection):
+    for image in imagecollection:
+        if image.translation[0, 1] != 0:
+            warn("Expected images on top of each other to have zero x-offset. "
+                  "%s has offset %s" % (image.path, image.translation[0]))
+        if image.translation[1, 0] != 0:
+            warn("Expected images beside each other to have zero y-offset. "
+                  "%s has offset %s" % (image.path, image.translation[1]))
 
 
 def _smooth_overlap(img):
