@@ -53,8 +53,8 @@ def stitch(images):
     if type(images) != ImageCollection:
         images = ImageCollection(images)
     translations = calc_translations_parallel(images)
-    y_translations = translations[:,0]
-    x_translations = translations[:,1]
+    y_translations = translations[1:,0] # do not include top left (offset should be zero)
+    x_translations = translations[1:,1]
 
     # check that they are regular spaced
     xoffset = np.median(y_translations[:, 1])
