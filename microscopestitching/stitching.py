@@ -4,6 +4,7 @@ from skimage.io import imread
 from itertools import product
 import numpy as np
 from joblib import Parallel, delayed
+from warnings import warn
 
 from multiprocessing import cpu_count
 try:
@@ -37,7 +38,7 @@ def stitch(images):
 
     Parameters
     ----------
-    images : list of tuple (path, row, column)
+    images : ImageCollection or list of tuple(path, row, column)
         Each image-tuple should contain path, row and column. Row 0,
         column 0 is top left image.
 
@@ -49,20 +50,21 @@ def stitch(images):
     ndarray
         Merged image.
     """
-    ic = ImageCollection(images)
-    translations = calc_translations_parallel(ic)
+    if type(images) != ImageCollection:
+        images = ImageCollection(images)
+    translations = calc_translations_parallel(images)
     y_translations = translations[:,0]
     x_translations = translations[:,1]
 
     # check that they are regular spaced
     xoffset = np.median(y_translations[:, 1])
     if xoffset != 0:
-        print("Warning: Expected rows to have zero x-offset. "
+        warn("Expected rows to have zero x-offset. "
               "Offset found: %s" % xoffset)
 
     yoffset = np.median(x_translations[:, 0])
     if yoffset != 0:
-        print("Warning: Expected columns to have zero y-offset. "
+        warn("Expected columns to have zero y-offset. "
               "Offset found: %s" % yoffset)
 
     yoffset = np.median(y_translations[:, 0])
@@ -72,20 +74,21 @@ def stitch(images):
     assert xoffset < 0, "Column offset should be negative"
 
     if xoffset != yoffset:
-        print('Warning: yoffset != xoffset: %s != %s' % (yoffset, xoffset))
+        warn('yoffset != xoffset: %s != %s' % (yoffset, xoffset))
 
     # assume all images have the same shape
-    img1 = imread(ic.images[0].path)
+    img1 = imread(images[0].path)
     y, x = img1.shape
-    height = y*len(ic.rows) + yoffset*(len(ic.rows)-1)
-    width = x*len(ic.cols) + xoffset*(len(ic.cols)-1)
+    height = y*len(images.rows) + yoffset*(len(images.rows)-1)
+    width = x*len(images.cols) + xoffset*(len(images.cols)-1)
 
     # last dimension is number of images on top of each other
     merged = np.zeros((height, width, 2), dtype=np.int)
-    for r, c in product(ic.rows, ic.cols):
+    for image in images:
+        r, c = image.row, image.col
         mask = _merge_slice(r, c, y, x, yoffset, xoffset)
         # last dim is used for averaging the seam
-        img = _add_ones_dim(imread(ic.image(r, c).path))
+        img = _add_ones_dim(imread(images(r, c).path))
         merged[mask] += img
 
     # average seam, possible improvement: use gradient
@@ -109,7 +112,7 @@ class Image:
 
     def __bool__(self):
         return self.path != ''
-    __nonzero__=__bool__
+    __nonzero__ = __bool__
 
 
 
@@ -122,6 +125,7 @@ class ImageCollection:
     def image(self, row, col):
         return next((img for img in self.images
                      if img.row == row and img.col == col), Image(''))
+    __call__ = image
 
     def translation(self, img):
         if type(img.translation) == np.ndarray:
