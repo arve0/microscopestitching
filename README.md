@@ -38,7 +38,7 @@ merged = stitch(images)
 imsave('merged.png', merged)
 ```
 
-See also [this notebook](http://nbviewer.ipython.org/github/arve0/microscopestitching/blob/master/notebooks/example.ipynb).
+See also [notebook examples](http://nbviewer.ipython.org/github/arve0/microscopestitching/blob/master/notebooks/).
 
 ## API reference
 
