@@ -51,8 +51,8 @@ def stitch(images):
 
     Returns
     -------
-    ndarray
-        Merged image.
+    tuple (stitched, offset)
+        Stitched image and registered offset (y, x).
     """
     if type(images) != ImageCollection:
         images = ImageCollection(images)
@@ -60,9 +60,6 @@ def stitch(images):
     _translation_warn(images)
 
     yoffset, xoffset = images.median_translation()
-
-    assert yoffset < 0, "Row offset should be negative"
-    assert xoffset < 0, "Column offset should be negative"
 
     if xoffset != yoffset:
         warn('yoffset != xoffset: %s != %s' % (yoffset, xoffset))
@@ -84,7 +81,7 @@ def stitch(images):
     # average seam, possible improvement: use gradient
     merged[..., 0] /= merged[..., 1]
 
-    return merged[..., 0].astype(np.uint8)
+    return merged[..., 0].astype(np.uint8), (yoffset, xoffset)
 
 
 
@@ -158,8 +155,16 @@ class ImageCollection:
 
 
     def median_translation(self):
-        y = np.median(self.y_translations[:,0])
-        x = np.median(self.x_translations[:,1])
+        if len(self.y_translations):
+            y = np.median(self.y_translations[:,0])
+            assert y < 0, "Row offset should be negative."
+        else:
+            y = 0
+        if len(self.x_translations):
+            x = np.median(self.x_translations[:,1])
+            assert x < 0, "Column offset should be negative."
+        else:
+            x = 0
         return y, x
 
 
