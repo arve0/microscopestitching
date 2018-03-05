@@ -68,6 +68,6 @@ make docs
 
 [build-status-image]: https://secure.travis-ci.org/arve0/microscopestitching.png?branch=master
 [travis]: http://travis-ci.org/arve0/microscopestitching?branch=master
-[pypi-version]: https://pypip.in/version/microscopestitching/badge.svg
+[pypi-version]: https://img.shields.io/pypi/v/microscopestitching.svg
 [pypi]: https://pypi.python.org/pypi/microscopestitching
-[wheel]: https://pypip.in/wheel/microscopestitching/badge.svg
+[wheel]: https://img.shields.io/pypi/wheel/microscopestitching.svg
